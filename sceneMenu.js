@@ -4,33 +4,33 @@ class sceneMenu extends Phaser.Scene {
     }
 
     preload() {
-        // Load images
-        this.load.image('bgMenu', 'asset shooter/BG1.png');
-        this.load.image('bgPilih', 'asset shooter/BGPilihPesawat.png');
-        this.load.image('bgPlay', 'asset shooter/BGPlay.png');
-        this.load.image('title', 'asset shooter/Title.png');
+        // Load images - Menggunakan %20 sebagai pengganti spasi agar terbaca di server GitHub Pages
+        this.load.image('bgMenu', 'asset%20shooter/BG1.png');
+        this.load.image('bgPilih', 'asset%20shooter/BGPilihPesawat.png');
+        this.load.image('bgPlay', 'asset%20shooter/BGPlay.png');
+        this.load.image('title', 'asset%20shooter/Title.png');
 
-        this.load.image('btnPlay', 'asset shooter/ButtonPlay.png');
-        this.load.image('btnMenu', 'asset shooter/ButtonMenu.png');
+        this.load.image('btnPlay', 'asset%20shooter/ButtonPlay.png');
+        this.load.image('btnMenu', 'asset%20shooter/ButtonMenu.png');
 
-        this.load.image('hero1', 'asset shooter/Pesawat1.png');
-        this.load.image('hero2', 'asset shooter/Pesawat2.png');
+        this.load.image('hero1', 'asset%20shooter/Pesawat1.png');
+        this.load.image('hero2', 'asset%20shooter/Pesawat2.png');
 
-        this.load.image('enemy1', 'asset shooter/Musuh1.png');
-        this.load.image('enemy2', 'asset shooter/Musuh2.png');
-        this.load.image('enemy3', 'asset shooter/Musuh3.png');
-        this.load.image('enemyBoss', 'asset shooter/MusuhBos.png');
+        this.load.image('enemy1', 'asset%20shooter/Musuh1.png');
+        this.load.image('enemy2', 'asset%20shooter/Musuh2.png');
+        this.load.image('enemy3', 'asset%20shooter/Musuh3.png');
+        this.load.image('enemyBoss', 'asset%20shooter/MusuhBos.png');
 
-        this.load.image('bullet', 'asset shooter/Peluru.png');
-        this.load.image('explode', 'asset shooter/EfekLedakan.png');
-        this.load.image('cloud', 'asset shooter/cloud.png');
+        this.load.image('bullet', 'asset%20shooter/Peluru.png');
+        this.load.image('explode', 'asset%20shooter/EfekLedakan.png');
+        this.load.image('cloud', 'asset%20shooter/cloud.png');
 
         // Load audio
-        this.load.audio('musicMenu', 'asset shooter/music_menu.mp3');
-        this.load.audio('musicPlay', 'asset shooter/music_play.mp3');
-        this.load.audio('musicGameOver', 'asset shooter/music_gameover.mp3');
-        this.load.audio('fxShoot', 'asset shooter/fx_shoot.mp3');
-        this.load.audio('fxExplode', 'asset shooter/fx_explode.mp3');
+        this.load.audio('musicMenu', 'asset%20shooter/music_menu.mp3');
+        this.load.audio('musicPlay', 'asset%20shooter/music_play.mp3');
+        this.load.audio('musicGameOver', 'asset%20shooter/music_gameover.mp3');
+        this.load.audio('fxShoot', 'asset%20shooter/fx_shoot.mp3');
+        this.load.audio('fxExplode', 'asset%20shooter/fx_explode.mp3');
     }
 
     create() {
@@ -42,15 +42,15 @@ class sceneMenu extends Phaser.Scene {
             this.sound.get('musicMenu').play();
         }
 
-        // Letakkan background tepat di tengah (400, 300) dan atur ukurannya agar pas
+        // Atur background tepat di tengah (400, 300)
         let bg = this.add.image(400, 300, 'bgMenu').setOrigin(0.5);
         bg.displayWidth = 800;
         bg.displayHeight = 600;
 
-        // Judul Game pas di tengah atas
+        // Judul Game
         this.add.image(400, 220, 'title').setOrigin(0.5).setScale(0.7);
 
-        // Tombol Start pas di tengah bawah
+        // Tombol Play
         let startBtn = this.add.image(400, 430, 'btnPlay').setOrigin(0.5).setInteractive().setScale(0.6);
 
         // Pindah ke scene Pilih Hero saat diklik
