@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shooter Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+
+    <script src="sceneMenu.js"></script>
+    <script src="scenePilihHero.js"></script>
+    <script src="scenePlay.js"></script>
+    <script src="sceneGameOver.js"></script>
+
+    <script>
+        // Konfigurasi utama game (Original 800x600)
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            physics: {
+                default: 'arcade',
+                arcade: { gravity: { y: 0 }, debug: false }
+            },
+            scene: [sceneMenu, scenePilihHero, scenePlay, sceneGameOver]
+        };
+
+        const game = new Phaser.Game(config);
+    </script>
+</body>
+
+</html>
