@@ -14,11 +14,19 @@ class scenePlay extends Phaser.Scene {
         // Background
         this.add.image(400, 300, 'bgPlay').setOrigin(0.5);
 
-        // Audio Management
-        this.music = this.sound.add('musicPlay', { loop: true, volume: 0.4 });
+        // Hentikan musik menu lama di sini tepat saat gameplay dimulai
+        let menuMusic = this.sound.get('musicMenu');
+        if (menuMusic) {
+            menuMusic.stop();
+        }
+
+        // Jalankan musik pertempuran dengan volume kencang (0.8)
+        this.music = this.sound.add('musicPlay', { loop: true, volume: 0.8 });
         this.music.play();
-        this.fxShoot = this.sound.add('fxShoot', { volume: 0.25 });
-        this.fxExplode = this.sound.add('fxExplode', { volume: 0.4 });
+
+        // Efek suara tembakan dan ledakan juga disesuaikan posisinya
+        this.fxShoot = this.sound.add('fxShoot', { volume: 0.4 });
+        this.fxExplode = this.sound.add('fxExplode', { volume: 0.6 });
 
         // Kontrol Input
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -27,7 +35,7 @@ class scenePlay extends Phaser.Scene {
             left: Phaser.Input.Keyboard.KeyCodes.A, right: Phaser.Input.Keyboard.KeyCodes.D
         });
 
-        // Player (Ukuran pas & Optimasi Hitbox Fisik)
+        // Player
         this.player = this.physics.add.sprite(400, 300, this.selectedHero);
         this.player.setScale(0.5);
         this.player.setCollideWorldBounds(true);
@@ -54,7 +62,6 @@ class scenePlay extends Phaser.Scene {
     update(time) {
         if (!this.player.active) return;
 
-        // Gerakan Player
         let speed = 320;
         this.player.setVelocity(0);
 
@@ -64,18 +71,15 @@ class scenePlay extends Phaser.Scene {
         if (this.cursors.up.isDown || this.wasd.up.isDown) this.player.setVelocityY(-speed);
         else if (this.cursors.down.isDown || this.wasd.down.isDown) this.player.setVelocityY(speed);
 
-        // Rotasi Mengikuti Arah Kursor Mouse
         let pointer = this.input.activePointer;
         let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, pointer.x, pointer.y);
         this.player.setRotation(angle + Math.PI / 2);
 
-        // Mekanik Tembak Beruntun
         if (pointer.isDown && time > this.lastFired) {
             this.fireBullet(this.player.x, this.player.y, angle);
             this.lastFired = time + 180;
         }
 
-        // Hapus Peluru di Luar Layar
         this.bullets.children.each(b => {
             if (b.active && (b.y < -20 || b.y > 620 || b.x < -20 || b.x > 820)) {
                 b.setActive(false); b.setVisible(false);
@@ -83,7 +87,6 @@ class scenePlay extends Phaser.Scene {
             }
         });
 
-        // Pergerakan AI Musuh
         this.enemies.children.each(enemy => {
             if (enemy.active) {
                 this.physics.moveToObject(enemy, this.player, 130);
@@ -97,7 +100,7 @@ class scenePlay extends Phaser.Scene {
         let bullet = this.bullets.get(x, y);
         if (bullet) {
             bullet.setActive(true).setVisible(true);
-            bullet.setScale(0.4); // Mengatur skala peluru
+            bullet.setScale(0.4);
             bullet.setRotation(angle + Math.PI / 2);
             bullet.body.setSize(bullet.width * 0.5, bullet.height * 0.5);
 

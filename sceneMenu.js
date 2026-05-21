@@ -4,7 +4,7 @@ class sceneMenu extends Phaser.Scene {
     }
 
     preload() {
-        // Load images - Menggunakan %20 sebagai pengganti spasi agar terbaca di server GitHub Pages
+        // Load images
         this.load.image('bgMenu', 'asset%20shooter/BG1.png');
         this.load.image('bgPilih', 'asset%20shooter/BGPilihPesawat.png');
         this.load.image('bgPlay', 'asset%20shooter/BGPlay.png');
@@ -34,33 +34,27 @@ class sceneMenu extends Phaser.Scene {
     }
 
     create() {
-        // Audio Management
+        // Audio Management - Volume dinaikkan ke 0.8 agar lebih kencang
         if (!this.sound.get('musicMenu')) {
-            this.musicMenu = this.sound.add('musicMenu', { loop: true, volume: 0.4 });
+            this.musicMenu = this.sound.add('musicMenu', { loop: true, volume: 0.8 });
             this.musicMenu.play();
         } else if (!this.sound.get('musicMenu').isPlaying) {
             this.sound.get('musicMenu').play();
         }
 
-        // Atur background tepat di tengah (400, 300)
         let bg = this.add.image(400, 300, 'bgMenu').setOrigin(0.5);
         bg.displayWidth = 800;
         bg.displayHeight = 600;
 
-        // Judul Game
         this.add.image(400, 220, 'title').setOrigin(0.5).setScale(0.7);
 
-        // Tombol Play
         let startBtn = this.add.image(400, 430, 'btnPlay').setOrigin(0.5).setInteractive().setScale(0.6);
 
-        // Pindah ke scene Pilih Hero saat diklik
+        // Langsung pindah scene tanpa mematikan lagu agar tetap terdengar saat pilih hero
         startBtn.on('pointerdown', () => {
-            let menuMusic = this.sound.get('musicMenu');
-            if (menuMusic) menuMusic.stop();
             this.scene.start('scenePilihHero');
         });
 
-        // Animasi hover tombol
         startBtn.on('pointerover', () => startBtn.setScale(0.65));
         startBtn.on('pointerout', () => startBtn.setScale(0.6));
     }
