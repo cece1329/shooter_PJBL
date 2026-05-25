@@ -1,156 +1,570 @@
-class scenePlay extends Phaser.Scene {
-    constructor() {
-        super('scenePlay');
-    }
+var scenePlay = new Phaser.Class({
+    Extends: Phaser.Scene,
 
-    init(data) {
-        this.selectedHero = data.heroType || 'hero1';
-    }
+    initialize: function () {
+        Phaser.Scene.call(this, { key: "scenePlay" });
+    },
 
-    create() {
-        this.score = 0;
-        this.lastFired = 0;
+    init: function () { },
+    preload: function () {
+        this.load.setBaseURL('assets/');
 
-        // Background
-        this.add.image(400, 300, 'bgPlay').setOrigin(0.5);
+        this.load.image('BG1', 'images/BG1.png');
+        this.load.image('BG2', 'images/BG2.png');
+        this.load.image('BG3', 'images/BG3.png');
+        this.load.image('GroundTransisi', 'images/Transisi.png');
+        this.load.image('Pesawat1', 'images/Pesawat1.png');
+        this.load.image('Pesawat2', 'images/Pesawat2.png');
+        this.load.image('Peluru', 'images/Peluru.png');
+        this.load.image('EfekLedakan', 'images/EfekLedakan.png');
+        this.load.image('cloud', 'images/cloud.png');
+        this.load.image('Musuh1', 'images/Musuh1.png');
+        this.load.image('Musuh2', 'images/Musuh2.png');
+        this.load.image('Musuh3', 'images/Musuh3.png');
+        this.load.image('MusuhBos', 'images/MusuhBos.png');
+        this.load.audio('snd_shoot', 'audio/fx_shoot.mp3');
+        this.load.audio('snd_explode', 'audio/fx_explode.mp3');
+        this.load.audio('snd_play', 'audio/music_play.mp3');
+    },
+    create: function () {
+        // menentukan index atau tekstur/gambar
+        // background secara acak dari 1 sampai 3
+        this.lastBgIndex = Phaser.Math.Between(1, 3);
 
-        // Hentikan musik menu lama di sini tepat saat gameplay dimulai
-        let menuMusic = this.sound.get('musicMenu');
-        if (menuMusic) {
-            menuMusic.stop();
-        }
+        // membuat penampung data ukuran gambar
+        // background pada lapisan paling bawah sendiri (disesuaikan untuk potret)
+        this.bgBottomSize = { 'width': 720, 'height': 1664 };
 
-        // Jalankan musik pertempuran dengan volume kencang (0.8)
-        this.music = this.sound.add('musicPlay', { loop: true, volume: 0.8 });
-        this.music.play();
+        // array untuk menampung semua background lapisan bawah
+        this.arrBgBottom = [];
 
-        // Efek suara tembakan dan ledakan juga disesuaikan posisinya
-        this.fxShoot = this.sound.add('fxShoot', { volume: 0.4 });
-        this.fxExplode = this.sound.add('fxExplode', { volume: 0.6 });
+        // fungsi dengan parameter posisi x dan posisi y untuk
+        // membuat background pada lapisan paling bawah sendiri
+        this.createBgBottom = function (xPos, yPos) {
+            let container = this.add.container(xPos, yPos);
+            container.setDepth(1);
 
-        // Kontrol Input
-        this.cursors = this.input.keyboard.createCursorKeys();
-        this.wasd = this.input.keyboard.addKeys({
-            up: Phaser.Input.Keyboard.KeyCodes.W, down: Phaser.Input.Keyboard.KeyCodes.S,
-            left: Phaser.Input.Keyboard.KeyCodes.A, right: Phaser.Input.Keyboard.KeyCodes.D
+            // Background utama (disesuaikan untuk potret)
+            let bgBottom = this.add.image(0, 0, 'BG' + this.lastBgIndex);
+            bgBottom.setOrigin(0.5, 0.5);
+            bgBottom.setDisplaySize(this.bgBottomSize.width, this.bgBottomSize.height);
+            bgBottom.setData('kecepatan', 3);
+            bgBottom.flipX = Phaser.Math.Between(0, 1) === 1;
+
+            container.add(bgBottom);
+
+            // Cek apakah akan menambahkan transisi
+            let newBgIndex = Phaser.Math.Between(1, 3);
+            if (newBgIndex !== this.lastBgIndex) {
+                let bgBottomAdditon = this.add.image(xPos, yPos - this.bgBottomSize.height / 2, 'GroundTransisi');
+                bgBottomAdditon.setData('kecepatan', 3);
+                bgBottomAdditon.setData('tambahan', true);
+                bgBottomAdditon.setDepth(2);
+                bgBottomAdditon.flipX = Phaser.Math.Between(0, 1) === 1;
+                this.arrBgBottom.push(bgBottomAdditon);
+            }
+
+            container.setData('kecepatan', 3);
+            this.arrBgBottom.push(container);
+
+            this.lastBgIndex = newBgIndex;
+        };
+
+        this.addBGBottom = function () {
+            if (this.arrBgBottom.length > 0) {
+                let lastBG = this.arrBgBottom[this.arrBgBottom.length - 1];
+                let nextY = lastBG.y - this.bgBottomSize.height;
+
+                // Jika ada transisi, kurangi lagi posisinya
+                if (lastBG.getData('tambahan')) {
+                    nextY -= 128; // tinggi GroundTransisi
+                }
+
+                this.createBgBottom(X_POSITION.CENTER, nextY); // Menggunakan X_POSITION.CENTER
+            } else {
+                this.createBgBottom(game.canvas.width / 2, game.canvas.height + this.bgBottomSize.height / 2);
+            }
+        };
+
+
+        // membuat 3 background pada lapisan paling bawah sendiri
+        // dengan cukup memanggil fungsi 'addBGBottom' sebanyak 3 kali
+        this.addBGBottom();
+        this.addBGBottom();
+        this.addBGBottom();
+
+        // membuat background pada lapisan bagian atas
+        // membuat penampung data ukuran gambar awan
+        this.bgCloudSize = { 'width': 768, 'height': 1962 };
+
+        // array untuk menampung semua background lapisan atas
+        this.arrBgTop = [];
+
+        // fungsi dengan parameter posisi x dan posisi y untuk membuat
+        // background pada lapisan atas sendiri, yakni awan
+        this.createBgTop = function (xPos, yPos) {
+            var bgTop = this.add.image(xPos, yPos, 'cloud');
+            bgTop.setData('kecepatan', 6);
+            bgTop.setDepth(5);
+            bgTop.flipX = Phaser.Math.Between(0, 1) === 1;
+            bgTop.setAlpha(Phaser.Math.Between(4, 7) / 10);
+            this.arrBgTop.push(bgTop);
+        };
+
+        // fungsi untuk menentukan posisi dari background paling atas sendiri,
+        // jadi untuk membuat background paling atas baru, tinggal panggil fungsi ini
+        this.addBGTop = function () {
+            if (this.arrBgTop.length > 0) {
+                let lastBG = this.arrBgTop[this.arrBgTop.length - 1];
+                this.createBgTop(X_POSITION.CENTER, lastBG.y - this.bgCloudSize.height * Phaser.Math.Between(1, 4)); // Menggunakan X_POSITION.CENTER
+            } else {
+                this.createBgTop(game.canvas.width / 2, -this.bgCloudSize.height);
+            }
+        };
+
+        // membuat 1 background pada lapisan paling atas
+        // dengan cukup memanggil fungsi 'addBGTop' sebanyak 1 kali
+        this.addBGTop();
+
+        // membuat tampilan skor
+        this.scoreLabel = this.add.text(X_POSITION.CENTER, Y_POSITION.TOP + 80, '0', {
+            // menentukan jenis font yang akan ditampilkan
+            fontFamily: 'Verdana, Arial',
+            // menentukan ukuran teks
+            fontSize: '40px',
+            // menentukan warna teks
+            color: '#ffffff',
+            // menentukan warna dari garis tepi teks
+            stroke: '#5c5c5c',
+            // menentukan ketebalan dari garis tepi teks
+            strokeThickness: 2
         });
 
-        // Player
-        this.player = this.physics.add.sprite(400, 300, this.selectedHero);
-        this.player.setScale(0.5);
-        this.player.setCollideWorldBounds(true);
-        this.player.setDrag(1200);
-        this.player.body.setCircle(this.player.width * 0.4, this.player.width * 0.1, this.player.height * 0.1);
+        // menentukan titik tumpu dari teks (0.5 berarti di tengah)
+        this.scoreLabel.setOrigin(0.5);
+        // mengatur posisi di lapisan ke berapa akan tampil
+        this.scoreLabel.setDepth(100);
 
-        // Groups
-        this.bullets = this.physics.add.group({ defaultKey: 'bullet', maxSize: 40 });
-        this.enemies = this.physics.add.group();
+        // Inisialisasi status game over
+        this.isGameOver = false;
 
-        // UI Score
-        this.scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '24px', fill: '#fff', stroke: '#000', strokeThickness: 4 });
+        // menambahkan pesawat hero ke dalam game
+        // Menggunakan currentHero untuk memilih pesawat yang dipilih
+        this.heroShip = this.add.image(X_POSITION.CENTER, Y_POSITION.BOTTOM - 200, 'Pesawat' + (currentHero + 1));
+        this.heroShip.setDepth(4);
+        this.heroShip.setScale(0.35);
 
-        // Loop Spawning Musuh
-        this.enemyTimer = this.time.addEvent({
-            delay: 900, callback: this.spawnEnemy, callbackScope: this, loop: true
-        });
+        // menyiapkan pendeteksi event untuk tombol arah keyboard
+        this.cursorKeyListener = this.input.keyboard.createCursorKeys();
 
-        // Colliders
-        this.physics.add.collider(this.bullets, this.enemies, this.hitEnemy, null, this);
-        this.physics.add.collider(this.player, this.enemies, this.hitPlayer, null, this);
-    }
+        // mengaktifkan deteksi pergerakan mouse atau touch pada layar
+        this.input.on('pointermove', function (pointer, currentlyOver) {
+            // kode program ketika terdeteksi pergerakan mouse atau touch pada layar
+            console.log(pointer);
+            console.log("pointer.x: " + pointer.x + " pointer.y: " + pointer.y);
+            // membuat variabel penampung posisi baru yang akan dituju oleh pesawat hero
+            // sekaligus mengisi nilai tiap variabel dengan posisi hero terkahir
+            let movementX = this.heroShip.x;
+            let movementY = this.heroShip.y;
+            // melakukan pengecekan pergerakan mouse pointer untuk menentukan gerak
+            // pesawat hero secara vertikal supaya tetap berada di dalam area layar
+            if (pointer.x > 70 && pointer.x < (X_POSITION.RIGHT - 70)) { // X_POSITION.RIGHT akan menjadi 720
+                movementX = pointer.x;
+            } else {
+                if (pointer.x <= 70) {
+                    movementX = 70;
+                } else {
+                    movementX = (X_POSITION.RIGHT - 70); // X_POSITION.RIGHT akan menjadi 720
+                }
+            }
+            // melakukan pengecekan pergerakan mouse pointer untuk menentukan gerak
+            // pesawat hero secara horizontal supaya tetap berada di dalam area layar
+            if (pointer.y > 70 && pointer.y < (Y_POSITION.BOTTOM - 70)) {
+                movementY = pointer.y;
+            } else {
+                if (pointer.y <= 70) {
+                    movementY = 70;
+                } else {
+                    movementY = (Y_POSITION.BOTTOM - 70);
+                }
+            }
 
-    update(time) {
-        if (!this.player.active) return;
+            // memindahkan posisi pesawat hero menuju posisi baru
+            // yang sudah ditentukan di dalam pengecekan
+            this.heroShip.x = movementX;
+            this.heroShip.y = movementY;
 
-        let speed = 320;
-        this.player.setVelocity(0);
+            // menentukan jarak antara titik hero dengan titik tujuan gerak
+            let a = this.heroShip.x - movementX;
+            let b = this.heroShip.y - movementY;
+            // menentukan durasi meluncur berdasarkan jarak yang sudah didapat
+            let durationToMove = Math.sqrt(a * a + b * b) * 0.8;
+            // animasi meluncur ke titik koordinat posisi pointer
+            this.tweens.add({
+                targets: this.heroShip,
+                x: movementX,
+                y: movementY,
+                duration: durationToMove,
+            });
+        }, this);
 
-        if (this.cursors.left.isDown || this.wasd.left.isDown) this.player.setVelocityX(-speed);
-        else if (this.cursors.right.isDown || this.wasd.right.isDown) this.player.setVelocityX(speed);
+        // menambahkan beberapa titik posisi untuk membuat pola kiri A
+        let pointA = []; // Disesuaikan untuk potret (lebar 720, tinggi 1280)
+        pointA.push(new Phaser.Math.Vector2(X_POSITION.CENTER - 460, 100)); // Off-screen kiri
+        pointA.push(new Phaser.Math.Vector2(X_POSITION.CENTER - 110, 200));
+        pointA.push(new Phaser.Math.Vector2(X_POSITION.CENTER - 160, (Y_POSITION.BOTTOM + 200) / 2));
+        pointA.push(new Phaser.Math.Vector2(X_POSITION.CENTER - 160, Y_POSITION.BOTTOM + 200));
 
-        if (this.cursors.up.isDown || this.wasd.up.isDown) this.player.setVelocityY(-speed);
-        else if (this.cursors.down.isDown || this.wasd.down.isDown) this.player.setVelocityY(speed);
+        // menambahkan beberapa titik posisi untuk membuat pola kanan A
+        let pointB = []; // Disesuaikan untuk potret (lebar 720, tinggi 1280)
+        pointB.push(new Phaser.Math.Vector2(X_POSITION.CENTER + 460, 100)); // Off-screen kanan
+        pointB.push(new Phaser.Math.Vector2(X_POSITION.CENTER + 110, 200));
+        pointB.push(new Phaser.Math.Vector2(X_POSITION.CENTER + 140, (Y_POSITION.BOTTOM + 200) / 2));
+        pointB.push(new Phaser.Math.Vector2(X_POSITION.CENTER + 140, Y_POSITION.BOTTOM + 200));
 
-        let pointer = this.input.activePointer;
-        let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, pointer.x, pointer.y);
-        this.player.setRotation(angle + Math.PI / 2);
+        // menambahkan beberapa titik posisi untuk membuat pola kanan B
+        let pointC = []; // Disesuaikan untuk potret (lebar 720, tinggi 1280)
+        pointC.push(new Phaser.Math.Vector2(X_POSITION.CENTER + 460, 100)); // Off-screen kanan
+        pointC.push(new Phaser.Math.Vector2(X_POSITION.CENTER + 110, 200));
+        pointC.push(new Phaser.Math.Vector2(X_POSITION.CENTER - 100, (Y_POSITION.BOTTOM + 200) / 2));
+        pointC.push(new Phaser.Math.Vector2(X_POSITION.LEFT, Y_POSITION.BOTTOM + 200));
 
-        if (pointer.isDown && time > this.lastFired) {
-            this.fireBullet(this.player.x, this.player.y, angle);
-            this.lastFired = time + 180;
-        }
+        // menambahkan beberapa titik posisi untuk membuat pola kiri B
+        let pointD = []; // Disesuaikan untuk potret (lebar 720, tinggi 1280)
+        pointD.push(new Phaser.Math.Vector2(X_POSITION.CENTER - 460, 100)); // Off-screen kiri
+        pointD.push(new Phaser.Math.Vector2(X_POSITION.CENTER + 110, 200));
+        pointD.push(new Phaser.Math.Vector2(X_POSITION.CENTER + 150, (Y_POSITION.BOTTOM + 200) / 2));
+        pointD.push(new Phaser.Math.Vector2(X_POSITION.RIGHT, Y_POSITION.BOTTOM + 200));
 
-        this.bullets.children.each(b => {
-            if (b.active && (b.y < -20 || b.y > 620 || b.x < -20 || b.x > 820)) {
-                b.setActive(false); b.setVisible(false);
-                b.body.stop();
+        // menampung pola-pola yang sudah ditambahkan
+        // ke dalam sebuah array bernama 'points'
+        var points = [];
+        points.push(pointA);
+        points.push(pointB);
+        points.push(pointC);
+        points.push(pointD);
+
+        // menambahkan sebuah variabel array dengan nama 'arrEnemy' untuk
+        // yang nantinya akan digunakan untuk menampung musuh-musuh
+        // yang sudah ditambahkan ke dalam game
+        this.arrEnemies = [];
+
+        // membuat sebuah class dengan nama Enemy yang nantinya akan
+        // digunakan berulang-ulang untuk membuat objek musuh.
+        var Enemy = new Phaser.Class({
+            Extends: Phaser.GameObjects.Image,
+
+            initialize:
+                // fungsi utama di dalam class 'Enemy' yang digunakan untuk
+                // membuat dan menambahkan sprite musuh ke dalam game.
+                // terdapat parameter 'scene' dan 'idxPath' yang digunakan
+                // untuk menentukan parent dan urutan pola pergerakan dari musuh
+                function Enemy(scene, idxPath) {
+                    // menambahkan objek baru dengan class 'Enemy' ke dalam game
+                    Phaser.GameObjects.Image.call(this, scene);
+                    // mengatur tampilan/tekstur dari objek musuh
+                    // secara acak berdasarkan aset yang sudah
+                    // disiapkan (3 gambar musuh, yakni Musuh1, Musuh2 dan Musuh3)
+                    this.setTexture('Musuh' + Phaser.Math.Between(1, 3));
+                    // mengatur urutan tampilan objek musuh berada di lapisan ke berapa
+                    this.setDepth(4);
+                    // mengatur ukuran dari musuh yang ditampilkan di game
+                    this.setScale(0.35);
+                    this.curve = new Phaser.Curves.Spline(points[idxPath]);
+
+                    // membuat musuh bergerak sesuai dengan pola atau path
+                    // 'sesuai idxPath' yang disertakan dalam parameter
+                    // selama 3 detik
+                    let lastEnemyCreated = this;
+                    this.path = { t: 0, vec: new Phaser.Math.Vector2() };
+                    scene.tweens.add({
+                        targets: this.path,
+                        t: 1,
+                        duration: 3000,
+                        onComplete: function () {
+                            if (lastEnemyCreated) {
+                                lastEnemyCreated.setActive(false);
+                            }
+                        }
+                    });
+                },
+
+            // membuat fungsi biasa di dalam class 'Enemy' dengan nama 'move'
+            // yang nantinya digunakan untuk menggerakkan musuh
+            move: function () {
+                this.curve.getPoint(this.path.t, this.path.vec);
+                this.x = this.path.vec.x;
+                this.y = this.path.vec.y;
             }
         });
 
-        this.enemies.children.each(enemy => {
+        // menambahkan fungsi yang akan terpanggil setiap 1/4 detik sekali (250 mili detik)
+        this.enemySpawnTimer = this.time.addEvent({
+            delay: 1000, // Mengurangi frekuensi spawn musuh agar tidak terlalu cepat di awal
+            callback: function () {
+                // setiap kode program yang ada di dalam sini
+                // akan terpanggil setiap 1/4 detik
+                // melakukan pengecekan jika jumlah musuh yang tampil masih di bawah 3
+                if (this.arrEnemies.length < 3) {
+                    // menambahkan musuh sekaligus menampung musuh baru ke dalam array 'arrMusuh'
+                    // berdasarkan class template dengan nama 'Enemy' yang sudah dibuat sebelumnya
+                    let enemy = new Enemy(this, Phaser.Math.Between(0, points.length - 1));
+                    this.arrEnemies.push(enemy);
+                    this.children.add(enemy);
+                }
+            },
+            callbackScope: this, // Menggunakan callbackScope agar 'this' merujuk ke scene
+            loop: true
+        });
+
+        // membuat sebuah class dengan nama Bullet yang nantinya
+        // akan digunakan berulang-ulang untuk membuat objek peluru
+        var Bullet = new Phaser.Class({
+            Extends: Phaser.GameObjects.Image,
+
+            initialize:
+                // fungsi utama untuk membuat objek peluru ketika class dipanggil
+                function Bullet(scene, x, y) {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'Peluru');
+                    this.setDepth(3);
+                    this.setPosition(x, y);
+                    this.setScale(0.5);
+                    // menentukan kecepatan pergerakan dari peluru yang ditampung
+                    // di dalam class, yakni 20000 piksel tiap detik
+                    this.speed = Phaser.Math.GetSpeed(20000, 1);
+                },
+            // fungsi tambahan dengan nama 'move' yang nantinya
+            // akan digunakan untuk menggerakkan peluru
+            move: function () {
+                // memindahkan posisi 'y' peluru untuk
+                // membuat peluru dapat bergerak naik
+                this.y -= this.speed;
+                // melakukan pengecekan batas untuk
+                // bergerak paling atas untuk peluru
+                if (this.y < -50) {
+                    // mengganti status dari objek peluru menjadi
+                    // tidak aktif (hanya menandai saja)
+                    this.setActive(false);
+                }
+            }
+        });
+
+        // menambahkan sebuah variabel array dengan nama 'arrMusuh' untuk
+        // yang nantinya akan digunakan untuk menampung musuh-musuh yang
+        // sudah ditambahkan ke dalam game
+        this.arrBullets = []; // Ini sudah ada, tidak perlu diubah
+
+        // menambahkan fungsi yang akan terpanggil setiap 1/4 detik sekali (250 mili detik)
+        this.bulletSpawnTimer = this.time.addEvent({
+            delay: 250, callback: function () {
+                // setiap kode program yang ada di dalam sini
+                // akan terpanggil setiap 1/4 detik
+
+                // menambahkan peluru sekaligus menampung peluru yang ditambahkan ke dalam array
+                // 'arrBullets' class template dengan nama 'Bullet' yang sudah dibuat sebelumnya
+                let bullet = new Bullet(this, this.heroShip.x, this.heroShip.y - 30);
+                this.arrBullets.push(bullet);
+                this.children.add(bullet);
+
+                //memainkan sound efek tembakan setiap 1/4 detik sekali
+                //berbarengan dengan munculnya peluru dari pesawat hero
+                // Cek status sound sebelum memainkan audio
+                if (window.isSoundEnabled && this.snd_shoot) {
+                    this.snd_shoot.play();
+                } // Ini sudah ada, tidak perlu diubah
+
+                // melakukan pengecekan jika jumlah musuh yang tampil masih di bawah 3
+            },
+            callbackScope: this, loop: true
+        });
+
+        // membuat variabel penampung skor
+        // menambahkan nilai 0 sebagai nilai awal pengisi variabel skor
+        this.scoreValue = 0;
+
+        // membuat tampilan skor
+
+        // membuat objek partikel berdasarkan aset gambar yang sudah ada
+        // kemudian menampungnya di dalam variabel 'partikelExplode'
+        let partikelExplode = this.add.particles('EfekLedakan');
+        // membuat partikel menjadi berada di urutan
+        // lapisan yang berada di atasnya pesawat hero maupun musuh
+        partikelExplode.setDepth(4);
+        //sound efek
+
+        //menambahkan variabel sound efek menembak
+        this.snd_shoot = this.sound.add('snd_shoot');
+        //menambahkan variabel sound efek meledak
+        this.snd_explode = this.sound.add('snd_explode');
+
+        // Tambahkan background music
+        this.bgMusic = this.sound.add('snd_play', {
+            volume: 0.5,
+            loop: true
+        });
+
+        // Play background music hanya jika sound enabled
+        if (window.isSoundEnabled) {
+            this.bgMusic.play();
+        }
+    },
+    // Function untuk handle game over
+    triggerGameOver: function () { // Ini sudah ada, tidak perlu diubah
+        if (this.isGameOver) return; // Prevent multiple calls
+
+        this.isGameOver = true; // Ini sudah ada, tidak perlu diubah
+
+        // Stop all timers
+        if (this.enemySpawnTimer) {
+            this.enemySpawnTimer.remove();
+        }
+        if (this.bulletSpawnTimer) {
+            this.bulletSpawnTimer.remove();
+        }
+
+        // Stop background music
+        if (this.bgMusic) {
+            this.bgMusic.stop();
+        }
+
+        // Hide hero ship
+        this.heroShip.setActive(false);
+        this.heroShip.setVisible(false);
+
+        // Add small delay before transitioning to game over scene
+        this.time.delayedCall(500, () => {
+            console.log("Transitioning to GameOver with score:", this.scoreValue);
+            this.scene.start("sceneGameOver", { score: this.scoreValue });
+        });
+    },
+    update: function () {
+        // mengakses array BG Bottom untuk digerakkan dan dihapus jika sudah tidak terlihat
+        for (let i = 0; i < this.arrBgBottom.length; i++) {
+            let bg = this.arrBgBottom[i];
+            bg.y += bg.getData('kecepatan');
+            // Menggunakan Y_POSITION.BOTTOM untuk pemeriksaan tinggi kanvas
+            if (bg.y > Y_POSITION.BOTTOM + this.bgBottomSize.height / 2) {
+                this.addBGBottom();
+                bg.destroy();
+                this.arrBgBottom.splice(i, 1);
+                break;
+            }
+        }
+
+        // mengakses array BG Top untuk digerakkan dan dihapus jika sudah tidak terlihat
+        for (let i = 0; i < this.arrBgTop.length; i++) {
+            this.arrBgTop[i].y += this.arrBgTop[i].getData('kecepatan'); // Kecepatan tetap sama
+            // Menggunakan Y_POSITION.BOTTOM untuk pemeriksaan tinggi kanvas
+            if (this.arrBgTop[i].y > Y_POSITION.BOTTOM + this.bgCloudSize.height / 2) {
+                this.arrBgTop[i].destroy();
+                this.arrBgTop.splice(i, 1);
+                this.addBGTop();
+                break;
+            }
+        }
+        // melakukan pen
+        // melakukan pengecekan apabila tombol keyboard arah 'KIRI' sedang ditekan (X_POSITION.LEFT akan menjadi 0)
+        // dan apabila nilai pada posisi 'x' pesawat hero lebih dari 70
+        if (this.cursorKeyListener.left.isDown && this.heroShip.x > 70) {
+            // menggerakkan pesawat ke kiri sejauh 7 piksel
+            this.heroShip.x -= 7;
+        }
+
+        // melakukan pengecekan apabila tombol keyboard arah 'KANAN' sedang ditekan (X_POSITION.RIGHT akan menjadi 720)
+        // dan apabila nilai pada posisi 'x' pesawat hero kurang dari lebar layar dikurangi 70
+        if (this.cursorKeyListener.right.isDown && this.heroShip.x < (X_POSITION.RIGHT - 70)) {
+            // menggerakkan pesawat ke kanan sejauh 7 piksel
+            this.heroShip.x += 7;
+        }
+
+        // melakukan pengecekan apabila tombol keyboard arah 'ATAS' sedang ditekan (Y_POSITION.TOP akan menjadi 0)
+        // dan apabila nilai pada posisi 'y' pesawat hero lebih dari 70
+        if (this.cursorKeyListener.up.isDown && this.heroShip.y > 70) {
+            // menggerakkan pesawat naik sejauh 7 piksel
+            this.heroShip.y -= 7;
+        }
+
+        // melakukan pengecekan apabila tombol keyboard arah 'BAWAH' sedang ditekan (Y_POSITION.BOTTOM akan menjadi 1280)
+        // dan apabila nilai pada posisi 'y' pesawat hero kurang dari tinggi layar dikurangi 70
+        if (this.cursorKeyListener.down.isDown && this.heroShip.y < (Y_POSITION.BOTTOM - 70)) {
+            // menggerakkan pesawat turun sejauh 7 piksel
+            this.heroShip.y += 7;
+        }
+
+        // membuat musuh selalu bergerak dengan
+        // mengakses fungsi 'move' lalu memanggilnya
+        for (let i = 0; i < this.arrEnemies.length; i++) {
+            this.arrEnemies[i].move();
+        }
+
+        // manajemen memori supaya semakin lama tidak semakin berat
+        // menghapus jika musuh sudah tidak active lagi
+        for (let i = 0; i < this.arrEnemies.length; i++) {
+            if (!this.arrEnemies[i].active) {
+                this.arrEnemies[i].destroy();
+                this.arrEnemies.splice(i, 1);
+                break;
+            }
+        }
+
+        // membuat peluru selalu bergerak
+        for (let i = 0; i < this.arrBullets.length; i++) {
+            this.arrBullets[i].move();
+        }
+
+        // manajemen memori supaya semakin lama, game tidak semakin berat
+        // dengan cara menghapus peluru dari scene jika sudah tidak active lagi
+        for (let i = 0; i < this.arrBullets.length; i++) {
+            // melakukan cek apabila kondisi peluru
+            // sedang aktif atau tidak
+            if (!this.arrBullets[i].active) {
+                // menghapus objek peluru dari memori dan scene
+                this.arrBullets[i].destroy();
+                // menghapus tampungan peluru yang dihapus
+                this.arrBullets.splice(i, 1);
+                break;
+            }
+        }
+
+        // mendeteksi ketika peluru hero terkena musuh
+        // mengakses array penampung pesawat musuh dengan perulangan for
+        for (let i = 0; i < this.arrEnemies.length; i++) {
+            // mengakses array penampung peluru pesawat hero dengan perulangan for
+            for (let j = 0; j < this.arrBullets.length; j++) {
+                // melakukan cek apakah terdapat peluru di area badan pesawat musuh
+                if (this.arrEnemies[i].getBounds().contains(this.arrBullets[j].x, this.arrBullets[j].y)) {
+                    // mengubah status dari musuh menjadi tidak aktif
+                    this.arrEnemies[i].setActive(false);
+                    // mengubah status dari peluru menjadi tidak aktif
+                    this.arrBullets[j].setActive(false);
+                    // menghentikan perulangan untuk mengakses array penampung peluru
+                    // menambahkan nilai ke dalam variabel penampung skor sebanyak 1
+                    this.scoreValue++;
+                    // menampilkan jumlah skor yang sudah ditampung dengan
+                    // menggunakan objek teks bernama scoreLabel
+                    this.scoreLabel.setText(this.scoreValue);
+                    //memainkan sound efek ledakan setiap kali
+                    //terdeteksi peluru bertabrakan dengan pesawat musuh
+                    this.snd_explode.play();
+                    break;
+                }
+            }
+        }
+
+        // Deteksi tabrakan antara hero dan musuh
+        for (let i = 0; i < this.arrEnemies.length; i++) {
+            let enemy = this.arrEnemies[i];
             if (enemy.active) {
-                this.physics.moveToObject(enemy, this.player, 130);
-                let enemyAngle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
-                enemy.setRotation(enemyAngle - Math.PI / 2);
+                // Deteksi tabrakan dengan hero
+                if (
+                    Phaser.Geom.Intersects.RectangleToRectangle(
+                        this.heroShip.getBounds(),
+                        enemy.getBounds()
+                    )
+                ) {
+                    this.triggerGameOver(); // Memanggil fungsi game over yang didedikasikan
+                }
             }
-        });
-    }
-
-    fireBullet(x, y, angle) {
-        let bullet = this.bullets.get(x, y);
-        if (bullet) {
-            bullet.setActive(true).setVisible(true);
-            bullet.setScale(0.4);
-            bullet.setRotation(angle + Math.PI / 2);
-            bullet.body.setSize(bullet.width * 0.5, bullet.height * 0.5);
-
-            this.physics.velocityFromRotation(angle, 700, bullet.body.velocity);
-            this.fxShoot.play();
         }
     }
-
-    spawnEnemy() {
-        let x, y;
-        if (Phaser.Math.Between(0, 1) === 0) {
-            x = Phaser.Math.Between(0, 800);
-            y = Phaser.Math.Between(0, 1) === 0 ? -40 : 640;
-        } else {
-            x = Phaser.Math.Between(0, 1) === 0 ? -40 : 840;
-            y = Phaser.Math.Between(0, 600);
-        }
-
-        const enemyTypes = ['enemy1', 'enemy2', 'enemy3'];
-        const randomType = Phaser.Math.RND.pick(enemyTypes);
-
-        let enemy = this.enemies.create(x, y, randomType);
-        enemy.setScale(0.45);
-        enemy.body.setCircle(enemy.width * 0.35);
-    }
-
-    hitEnemy(bullet, enemy) {
-        bullet.setActive(false).setVisible(false).body.stop();
-
-        let explosion = this.add.image(enemy.x, enemy.y, 'explode').setScale(0.6);
-        this.time.delayedCall(120, () => explosion.destroy());
-        this.fxExplode.play();
-
-        enemy.destroy();
-        this.score += 10;
-        this.scoreText.setText('Score: ' + this.score);
-    }
-
-    hitPlayer(player, enemy) {
-        this.physics.pause();
-        this.enemyTimer.remove();
-        this.music.stop();
-
-        let explosion = this.add.image(player.x, player.y, 'explode').setScale(1.2);
-        this.fxExplode.play();
-
-        player.setActive(false).setVisible(false);
-
-        this.time.delayedCall(1000, () => {
-            this.scene.start('sceneGameOver', { finalScore: this.score });
-        });
-    }
-}
+});

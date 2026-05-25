@@ -1,34 +1,139 @@
-class scenePilihHero extends Phaser.Scene {
-    constructor() {
-        super('scenePilihHero');
-    }
+var scenePilihHero = new Phaser.Class({
+    Extends: Phaser.Scene,
 
-    create() {
-        // Set background agar pas di tengah layar
-        let bg = this.add.image(400, 300, 'bgPilih').setOrigin(0.5);
-        bg.displayWidth = 800;
-        bg.displayHeight = 600;
+    initialize: function () {
+        Phaser.Scene.call(this, { key: "scenePilihHero" });
+    },
 
-        this.add.text(400, 80, 'PILIH HERO KAMU', {
-            fontSize: '36px', fill: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5
-        }).setOrigin(0.5);
+    init: function () { },
+    preload: function () {
+        this.load.setBaseURL('assets/');
 
-        // Opsi Hero 1 (Striker) - Posisi kiri seimbang
-        let opt1 = this.add.image(270, 300, 'hero1').setInteractive().setScale(0.55);
-        this.add.text(270, 410, 'STRIKER', { fontSize: '22px', fill: '#00ffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+        this.load.image('BGPilihPesawat', 'images/BGPilihPesawat.png');
+        this.load.image('ButtonMenu', 'images/ButtonMenu.png');
+        this.load.image('ButtonNext', 'images/ButtonNext.png');
+        this.load.image('ButtonPrev', 'images/ButtonPrev.png');
+        this.load.image('Pesawat1', 'images/Pesawat1.png');
+        this.load.image('Pesawat2', 'images/Pesawat2.png');
+    },
+    create: function () {
+        // menambahkan backdrop atau latar untuk scene pilih pesawat hero
+        this.add.image(X_POSITION.CENTER, Y_POSITION.CENTER, 'BGPilihPesawat');
+        // menambahkan tombol menu
+        var buttonMenu = this.add.image(50, 50, 'ButtonMenu');
+        // menambahkan tombol next
+        var buttonNext = this.add.image(X_POSITION.CENTER + 250, Y_POSITION.CENTER, 'ButtonNext');
+        // menambahkan tombol previous
+        var buttonPrevious = this.add.image(X_POSITION.CENTER - 250, Y_POSITION.CENTER, 'ButtonPrev');
+        // menambahkan pesawat hero berdasarkan dengan hero yang sedang aktif
+        var heroShip = this.add.image(X_POSITION.CENTER, Y_POSITION.CENTER, 'Pesawat' + (currentHero + 1));
+        
+        // membuat tombol menu bisa dikenai interaksi
+        buttonMenu.setInteractive();
+        // membuat tombol next bisa dikenai interaksi
+        buttonNext.setInteractive();
+        // membuat tombol previous bisa dikenai interaksi
+        buttonPrevious.setInteractive();
+        // membuat pesawat hero bisa dikenai interaksi
+        heroShip.setInteractive();
 
-        // Opsi Hero 2 (Blaster) - Posisi kanan seimbang
-        let opt2 = this.add.image(530, 300, 'hero2').setInteractive().setScale(0.55);
-        this.add.text(530, 410, 'BLASTER', { fontSize: '22px', fill: '#ff00ff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+        // Flag untuk mencegah multiple scene transitions
+        this.isTransitioning = false;
 
-        // Efek hover tombol pesawat
-        opt1.on('pointerover', () => opt1.setScale(0.62));
-        opt1.on('pointerout', () => opt1.setScale(0.55));
-        opt2.on('pointerover', () => opt2.setScale(0.62));
-        opt2.on('pointerout', () => opt2.setScale(0.55));
+        // event listener 'gameobjectover'
+        this.input.on('gameobjectover', function (pointer, gameObject) {
+            // melakukan cek jika game objek yang sedang terkena
+            // listener 'gameobjectover' adalah button buttonMenu
+            if (gameObject === buttonMenu) {
+                buttonMenu.setTint(0x999999);
+            }
+            // melakukan cek jika game objek yang sedang terkena
+            // listener 'gameobjectover' adalah button buttonNext
+            if (gameObject === buttonNext) {
+                buttonNext.setTint(0x999999);
+            }
+            // melakukan cek jika game objek yang sedang terkena
+            // listener 'gameobjectover' adalah button buttonPrevious
+            if (gameObject === buttonPrevious) {
+                buttonPrevious.setTint(0x999999);
+            }
+            // melakukan cek jika game objek yang sedang terkena
+            // listener 'gameobjectover' adalah heroShip
+            if (gameObject === heroShip) {
+                heroShip.setTint(0x999999);
+            }
+        }, this);
 
-        // Event Klik kirim tipe hero ke gameplay
-        opt1.on('pointerdown', () => this.scene.start('scenePlay', { heroType: 'hero1' }));
-        opt2.on('pointerdown', () => this.scene.start('scenePlay', { heroType: 'hero2' }));
-    }
-}
+        // event listener 'gameobjectdown'
+        this.input.on('gameobjectdown', function (pointer, gameObject) {
+            if (gameObject === buttonMenu) {
+                buttonMenu.setTint(0x999999);
+            }
+            if (gameObject === buttonNext) {
+                buttonNext.setTint(0x999999);
+            }
+            if (gameObject === buttonPrevious) {
+                buttonPrevious.setTint(0x999999);
+            }
+            if (gameObject === heroShip) {
+                heroShip.setTint(0x999999);
+            }
+        }, this);
+
+        // event listener 'gameobjectout'
+        this.input.on('gameobjectout', function (pointer, gameObject) {
+            // melakukan cek jika game objek yang sedang terkena
+            // listener 'gameobjectout' adalah buttonMenu
+            if (gameObject === buttonMenu) {
+                buttonMenu.setTint(0xffffff);
+            }
+            if (gameObject === buttonNext) {
+                buttonNext.setTint(0xffffff);
+            }
+            if (gameObject === buttonPrevious) {
+                buttonPrevious.setTint(0xffffff);
+            }
+            if (gameObject === heroShip) {
+                heroShip.setTint(0xffffff);
+            }
+        }, this);
+
+        // event listener 'gameobjectup'
+        this.input.on('gameobjectup', function (pointer, gameObject) {
+            // Cegah multiple transitions
+            if (this.isTransitioning) return;
+
+            if (gameObject === buttonMenu) {
+                buttonMenu.setTint(0xffffff);
+                snd_touch.play();
+                this.isTransitioning = true;
+                this.scene.start('sceneMenu');
+            }
+            if (gameObject === buttonNext) {
+                buttonNext.setTint(0xffffff);
+                currentHero++;
+                if (currentHero >= countHero) {
+                    currentHero = 0;
+                }
+                heroShip.setTexture('Pesawat' + (currentHero + 1));
+            }
+            if (gameObject === buttonPrevious) {
+                buttonPrevious.setTint(0xffffff);
+                currentHero--;
+                if (currentHero < 0) {
+                    currentHero = (countHero - 1);
+                }
+                heroShip.setTexture('Pesawat' + (currentHero + 1));
+            }
+            if (gameObject === heroShip) {
+                heroShip.setTint(0xffffff);
+                this.isTransitioning = true;
+                // Tambahkan sedikit delay untuk feedback visual
+                this.time.delayedCall(100, () => {
+                    this.scene.start('scenePlay');
+                });
+            }
+        }, this);
+    },
+    update: function () { }
+});
